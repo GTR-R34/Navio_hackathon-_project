@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sign Up — HealthPath</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --dark:   #1A2E35;
+  --teal:   #02A896;
+  --orange: #E85D26;
+  --cream:  #F5F0E8;
+  --white:  #FFFFFF;
+  --gray:   #6B7280;
+  --light:  #E6F9F7;
+  --error:  #DC2626;
+}
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--dark);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+/* ── NAV ── */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 3rem;
+  background: rgba(245,240,232,0.9);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(2,168,150,0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.nav-logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.4rem;
+  color: var(--dark);
+  text-decoration: none;
+}
+.nav-logo span { color: var(--teal); }
+.nav-link {
+  font-size: 0.9rem;
+  color: var(--gray);
+  text-decoration: none;
+}
+.nav-link strong { color: var(--teal); }
+/* ── LAYOUT ── */
+.page {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+}
+.form-card {
+  background: var(--white);
+  border-radius: 24px;
+  padding: 3rem;
+  width: 100%;
+  max-width: 580px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.07);
+  animation: fadeUp 0.5s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.form-header { margin-bottom: 2rem; }
+.form-header h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 2rem;
+  margin-bottom: 0.4rem;
+}
+.form-header p { color: var(--gray); font-size: 0.9rem; }
+/* ── ERROR ── */
+.error-box {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  color: var(--error);
+  font-size: 0.88rem;
+  margin-bottom: 1.5rem;
+}
+/* ── STEPS ── */
+.steps {
+  display: flex;
+  gap: 0;
+  margin-bottom: 2rem;
+}
+.step {
+  flex: 1;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--gray);
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid #E5E7EB;
+  transition: all 0.3s;
+}
+.step.active {
+  color: var(--teal);
+  border-bottom-color: var(--teal);
+}
+.step.done {
+  color: var(--teal);
+  border-bottom-color: var(--teal);
+  opacity: 0.5;
+}
+/* ── FORM SECTIONS ── */
+.form-section { display: none; }
+.form-section.active { display: block; animation: fadeUp 0.4s ease both; }
+/* ── FORM FIELDS ── */
+.field { margin-bottom: 1.2rem; }
+.field label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--dark);
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.3px;
+}
+.field input,
+.field select {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  color: var(--dark);
+  background: var(--white);
+  transition: border-color 0.2s;
+  outline: none;
+}
+.field input:focus,
+.field select:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(2,168,150,0.1);
+}
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+/* ── CATEGORY CARDS ── */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+.category-card {
+  border: 2px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.category-card:hover { border-color: var(--teal); background: var(--light); }
+.category-card.selected { border-color: var(--teal); background: var(--light); }
+.category-card .icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.category-card .label { font-size: 0.85rem; font-weight: 600; color: var(--dark); }
+/* ── DISABILITY OPTIONS ── */
+.disability-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+.disability-card {
+  border: 2px solid #E5E7EB;
+  border-radius: 14px;
+  padding: 1.2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.disability-card:hover { border-color: var(--orange); background: #FFF7F5; }
+.disability-card.selected { border-color: var(--orange); background: #FFF7F5; }
+.disability-card .icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+.disability-card .label { font-size: 0.85rem; font-weight: 600; }
+/* ── EMERGENCY CONTACTS ── */
+.contact-row {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+.contact-row input {
+  flex: 1;
+  padding: 0.7rem 0.9rem;
+  border: 1.5px solid #E5E7EB;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  outline: none;
+}
+.contact-row input:focus { border-color: var(--teal); }
+.add-contact-btn {
+  background: none;
+  border: 1.5px dashed var(--teal);
+  color: var(--teal);
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 0.4rem;
+  transition: all 0.2s;
+}
+.add-contact-btn:hover { background: var(--light); }
+/* ── NAVIGATION BUTTONS ── */
+.form-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+.btn {
+  padding: 0.85rem 2rem;
+  border-radius: 100px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.25s;
+  text-decoration: none;
+}
+.btn-back {
+  background: none;
+  border: 1.5px solid #E5E7EB;
+  color: var(--gray);
+}
+.btn-back:hover { border-color: var(--dark); color: var(--dark); }
+.btn-next {
+  background: var(--teal);
+  color: var(--white);
+  flex: 1;
+}
+.btn-next:hover { background: #019688; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(2,168,150,0.3); }
+.btn-submit {
+  background: var(--dark);
+  color: var(--white);
+  flex: 1;
+}
+.btn-submit:hover { background: #0f1e23; transform: translateY(-1px); }
+/* ── HIDDEN INPUT ── */
+input[type="hidden"] { display: none; }
+@media (max-width: 500px) {
+  .form-card { padding: 2rem 1.5rem; }
+  .field-row { grid-template-columns: 1fr; }
+  .category-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">Health<span>Path</span></a>
+  <a href="/login" class="nav-link">Already have an account? <strong>Log in</strong></a>
+</nav>
+
+<div class="page">
+  <div class="form-card">
+    <div class="form-header">
+      <h1>Create your account</h1>
+      <p>Tell us about yourself so we can personalize your experience</p>
+    </div>
+
+    {% if error %}
+    <div class="error-box">⚠️ {{ error }}</div>
+    {% endif %}
+
+    <!-- Progress Steps — now 3 steps since no conditions step -->
+    <div class="steps">
+      <div class="step active" id="step-indicator-1">1. Basic Info</div>
+      <div class="step" id="step-indicator-2">2. Category</div>
+      <div class="step" id="step-indicator-3">3. Emergency</div>
+    </div>
+
+    <form method="POST" action="/signup" id="signupForm">
+      <!-- Hidden fields populated by JS -->
+      <input type="hidden" name="category"         id="categoryInput"/>
+      <input type="hidden" name="disability_type"  id="disabilityInput"/>
+      <input type="hidden" name="emergency_contacts" id="emergencyInput"/>
+
+      <!-- ── STEP 1: Basic Info ── -->
+      <div class="form-section active" id="section-1">
+        <div class="field">
+          <label>Full Name</label>
+          <input type="text" name="name" placeholder="e.g. Priya Sharma" required/>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Age</label>
+            <input type="number" name="age" placeholder="e.g. 45" min="1" max="120" required/>
+          </div>
+          <div class="field">
+            <label>Gender</label>
+            <select name="gender" required>
+              <option value="" disabled selected>Select</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+              <option value="other">Other</option>
+              <option value="prefer_not">Prefer not to say</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Mobile Number</label>
+          <input type="tel" name="mobile" placeholder="e.g. 9876543210" required/>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" name="password" placeholder="Create a password" required/>
+        </div>
+        <div class="form-nav">
+          <button type="button" class="btn btn-next" onclick="goToStep(2)">Next →</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 2: Category ── -->
+      <div class="form-section" id="section-2">
+        <p style="font-size:0.88rem; color:var(--gray); margin-bottom:1.2rem;">Select the category that best describes you</p>
+
+        <div class="category-grid">
+          <div class="category-card" onclick="selectCategory('disabled', this)">
+            <div class="icon">♿</div>
+            <div class="label">Differently Abled<br/><span style="font-weight:400;font-size:0.75rem;color:var(--gray)">Wheelchair / Visually Impaired</span></div>
+          </div>
+          <div class="category-card" onclick="selectCategory('senior', this)">
+            <div class="icon">👴</div>
+            <div class="label">Senior Citizen<br/><span style="font-weight:400;font-size:0.75rem;color:var(--gray)">65 years and above</span></div>
+          </div>
+        </div>
+
+        <!-- Disability sub-type — only shown when 'disabled' is selected -->
+        <div id="disability-subtype" style="display:none;">
+          <p style="font-size:0.85rem; color:var(--gray); margin-bottom:0.8rem;">Select your accessibility need</p>
+          <div class="disability-grid">
+            <div class="disability-card" onclick="selectDisability('wheelchair', this)">
+              <div class="icon">♿</div>
+              <div class="label">Wheelchair User</div>
+            </div>
+            <div class="disability-card" onclick="selectDisability('blind', this)">
+              <div class="icon">🦯</div>
+              <div class="label">Visually Impaired</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Senior confirmation message -->
+        <div id="senior-note" style="display:none; text-align:center; padding:1.5rem 0;">
+          <div style="font-size:2.5rem; margin-bottom:0.8rem;">👴</div>
+          <p style="color:var(--gray); font-size:0.88rem;">We'll help you find elevators, rest spots, and accessible washrooms wherever you go.</p>
+        </div>
+
+        <div class="form-nav">
+          <button type="button" class="btn btn-back" onclick="goToStep(1)">← Back</button>
+          <button type="button" class="btn btn-next" onclick="goToStep(3)">Next →</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 3: Emergency Contacts ── -->
+      <div class="form-section" id="section-3">
+        <p style="font-size:0.88rem; color:var(--gray); margin-bottom:1.2rem;">Add emergency contacts who should be notified if you need help</p>
+        <div id="contacts-container">
+          <div class="contact-row">
+            <input type="text" placeholder="Contact Name" class="contact-name"/>
+            <input type="tel" placeholder="Mobile Number" class="contact-number"/>
+          </div>
+        </div>
+        <button type="button" class="add-contact-btn" onclick="addContact()">+ Add another contact</button>
+        <div class="form-nav" style="margin-top:1.5rem;">
+          <button type="button" class="btn btn-back" onclick="goToStep(2)">← Back</button>
+          <button type="submit" class="btn btn-submit" onclick="prepareSubmit()">Create Account ✓</button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+  let currentStep = 1;
+  let selectedCategory = '';
+  let selectedDisability = '';
+
+  function goToStep(step) {
+    // Validate step 1
+    if (step === 2 && currentStep === 1) {
+      const name     = document.querySelector('input[name="name"]').value;
+      const age      = document.querySelector('input[name="age"]').value;
+      const mobile   = document.querySelector('input[name="mobile"]').value;
+      const password = document.querySelector('input[name="password"]').value;
+      if (!name || !age || !mobile || !password) {
+        alert('Please fill in all fields before continuing.');
+        return;
+      }
+    }
+
+    // Validate step 2
+    if (step === 3 && currentStep === 2) {
+      if (!selectedCategory) {
+        alert('Please select a category before continuing.');
+        return;
+      }
+      if (selectedCategory === 'disabled' && !selectedDisability) {
+        alert('Please select your accessibility type.');
+        return;
+      }
+    }
+
+    // Transition
+    document.getElementById(`section-${currentStep}`).classList.remove('active');
+    document.getElementById(`step-indicator-${currentStep}`).classList.remove('active');
+    document.getElementById(`step-indicator-${currentStep}`).classList.add('done');
+    currentStep = step;
+    document.getElementById(`section-${currentStep}`).classList.add('active');
+    document.getElementById(`step-indicator-${currentStep}`).classList.add('active');
+  }
+
+  function selectCategory(cat, el) {
+    selectedCategory = cat;
+    selectedDisability = '';
+    document.getElementById('categoryInput').value = cat;
+    document.getElementById('disabilityInput').value = '';
+    document.querySelectorAll('.category-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+
+    // Show/hide sub-sections
+    document.getElementById('disability-subtype').style.display = cat === 'disabled' ? 'block' : 'none';
+    document.getElementById('senior-note').style.display        = cat === 'senior'   ? 'block' : 'none';
+
+    // Reset disability cards if switching away
+    document.querySelectorAll('.disability-card').forEach(c => c.classList.remove('selected'));
+  }
+
+  function selectDisability(type, el) {
+    selectedDisability = type;
+    document.getElementById('disabilityInput').value = type;
+    document.querySelectorAll('.disability-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function addContact() {
+    const container = document.getElementById('contacts-container');
+    const row = document.createElement('div');
+    row.className = 'contact-row';
+    row.innerHTML = `
+      <input type="text" placeholder="Contact Name" class="contact-name"/>
+      <input type="tel" placeholder="Mobile Number" class="contact-number"/>
+    `;
+    container.appendChild(row);
+  }
+
+  function prepareSubmit() {
+    // Collect emergency contacts as "Name:Number,Name:Number"
+    const names   = document.querySelectorAll('.contact-name');
+    const numbers = document.querySelectorAll('.contact-number');
+    const contacts = [];
+    for (let i = 0; i < names.length; i++) {
+      if (names[i].value && numbers[i].value) {
+        contacts.push(`${names[i].value}:${numbers[i].value}`);
+      }
+    }
+    document.getElementById('emergencyInput').value = contacts.join(',');
+  }
+</script>
+
+</body>
+</html>

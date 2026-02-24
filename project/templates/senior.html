@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Senior Hub — SafeStep</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream:      #FAF7F2;
+      --warm-white: #FFFCF8;
+      --sage:       #6B8F71;
+      --slate:      #3D4F5C;
+      --slate-light:#6B8090;
+      --gold:       #D4A847;
+      --gold-pale:  #FDF8EC;
+      --shadow:     0 4px 24px rgba(61,79,92,0.10);
+      --shadow-lg:  0 12px 48px rgba(61,79,92,0.15);
+      --danger:     #C94A4A;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--slate);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 80% 10%, rgba(212,168,71,0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 5% 90%, rgba(107,143,113,0.07) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* ── Emergency bar ── */
+    .emergency-bar {
+      background: var(--danger);
+      color: #fff;
+      text-align: center;
+      padding: 0.6rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      position: relative; z-index: 90;
+      text-decoration: none;
+      display: block;
+      transition: background 0.2s;
+    }
+    .emergency-bar:hover { background: #a83333; }
+    .pulse {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #fff;
+      margin-right: 8px;
+      animation: pulse 1.4s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(1.4); }
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(250,247,242,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(61,79,92,0.08);
+      padding: 0 2rem;
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-brand {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.5rem;
+      color: var(--sage);
+      text-decoration: none;
+    }
+    .nav-back {
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: var(--gold);
+      text-decoration: none;
+      display: flex; align-items: center; gap: 0.35rem;
+      transition: gap 0.2s;
+    }
+    .nav-back:hover { gap: 0.6rem; }
+
+    /* ── Main ── */
+    main {
+      position: relative; z-index: 1;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 4rem;
+    }
+
+    /* ── Page header ── */
+    .page-header { margin-bottom: 2.5rem; animation: fadeUp 0.5s ease both; }
+    .page-tag {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--gold-pale);
+      border: 1px solid rgba(212,168,71,0.3);
+      border-radius: 999px;
+      padding: 0.35rem 1rem;
+      font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 1rem;
+    }
+    .page-header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2rem, 5vw, 2.8rem);
+      color: var(--slate); line-height: 1.1; letter-spacing: -0.03em;
+    }
+    .page-header p {
+      margin-top: 0.75rem; font-size: 1rem;
+      color: var(--slate-light); max-width: 520px; line-height: 1.6;
+    }
+
+    /* ── Filter pills ── */
+    .filter-bar {
+      display: flex; flex-wrap: wrap; gap: 0.5rem;
+      margin-bottom: 2rem;
+      animation: fadeUp 0.5s 0.1s ease both;
+    }
+    .pill {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.5rem 1.1rem;
+      border-radius: 999px;
+      border: 1.5px solid rgba(61,79,92,0.15);
+      background: var(--warm-white);
+      font-size: 0.82rem; font-weight: 600;
+      color: var(--slate-light);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .pill:hover, .pill.active {
+      background: var(--gold); border-color: var(--gold); color: #fff;
+    }
+
+    /* ── Map ── */
+    .map-wrap {
+      background: var(--warm-white);
+      border: 1px solid rgba(61,79,92,0.08);
+      border-radius: 24px; overflow: hidden;
+      box-shadow: var(--shadow-lg); margin-bottom: 2rem;
+      animation: fadeUp 0.5s 0.15s ease both;
+    }
+    .map-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid rgba(61,79,92,0.07);
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap;
+    }
+    .map-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.1rem; color: var(--slate);
+    }
+    .locate-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; font-weight: 600;
+      background: var(--gold); color: #fff;
+      border: none; border-radius: 999px;
+      padding: 0.5rem 1.2rem; cursor: pointer;
+      display: flex; align-items: center; gap: 0.4rem;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .locate-btn:hover { background: #b8902d; transform: scale(1.03); }
+    .locate-btn:active { transform: scale(0.97); }
+    .locate-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    #map { height: 400px; width: 100%; z-index: 1; display: none; }
+
+    .map-placeholder {
+      height: 400px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 1rem;
+      background: linear-gradient(135deg, #FDF8EC 0%, #F5F0E8 100%);
+      color: var(--slate-light);
+    }
+    .map-placeholder .map-icon { font-size: 3rem; }
+    .map-placeholder p { font-size: 0.9rem; text-align: center; max-width: 280px; line-height: 1.5; }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--slate-light); margin-bottom: 1rem;
+    }
+
+    /* ── Feature cards ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem; margin-bottom: 2.5rem;
+      animation: fadeUp 0.5s 0.22s ease both;
+    }
+    .feature-card {
+      background: var(--warm-white);
+      border: 1px solid rgba(61,79,92,0.08);
+      border-radius: 18px; padding: 1.5rem;
+      box-shadow: var(--shadow); cursor: pointer;
+      transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+      position: relative; overflow: hidden;
+    }
+    .feature-card::after {
+      content: ''; position: absolute;
+      bottom: 0; left: 0; right: 0; height: 3px;
+      background: var(--gold);
+      transform: scaleX(0); transform-origin: left;
+      transition: transform 0.3s;
+    }
+    .feature-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: rgba(212,168,71,0.3); }
+    .feature-card:hover::after { transform: scaleX(1); }
+    .feature-card.active-feature { border-color: var(--gold); background: var(--gold-pale); }
+    .feature-card.active-feature::after { transform: scaleX(1); }
+    .feature-icon { font-size: 1.8rem; margin-bottom: 0.75rem; }
+    .feature-name { font-family: 'DM Serif Display', serif; font-size: 1.05rem; color: var(--slate); margin-bottom: 0.35rem; }
+    .feature-desc { font-size: 0.8rem; color: var(--slate-light); line-height: 1.5; }
+    .feature-status { margin-top: 0.75rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); }
+    .feature-status.on { color: var(--sage); }
+
+    /* ── Results ── */
+    .results-section { animation: fadeUp 0.5s 0.3s ease both; }
+    .results-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .result-item {
+      background: var(--warm-white);
+      border: 1px solid rgba(61,79,92,0.07);
+      border-radius: 14px; padding: 1rem 1.25rem;
+      display: flex; align-items: center; gap: 1rem;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s, border-color 0.2s;
+      cursor: pointer;
+    }
+    .result-item:hover { transform: translateX(4px); border-color: rgba(212,168,71,0.3); }
+    .result-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
+    .result-info { flex: 1; }
+    .result-name { font-weight: 600; font-size: 0.9rem; color: var(--slate); }
+    .result-meta { font-size: 0.77rem; color: var(--slate-light); margin-top: 0.2rem; }
+    .result-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; }
+    .result-tag { font-size: 0.68rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(212,168,71,0.12); color: var(--gold); }
+    .result-dist { font-size: 0.78rem; font-weight: 600; color: var(--slate-light); flex-shrink: 0; }
+
+    /* ── Skeleton loader ── */
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skeleton-row {
+      height: 72px; border-radius: 14px;
+      background: linear-gradient(90deg, #f0ebe3 25%, #e8e2d8 50%, #f0ebe3 75%);
+      background-size: 200% 100%; animation: shimmer 1.4s infinite;
+    }
+    .skeleton-row:nth-child(2) { animation-delay: 0.15s; }
+    .skeleton-row:nth-child(3) { animation-delay: 0.30s; }
+
+    /* ── Empty / error states ── */
+    .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--slate-light); }
+    .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .empty-state p { font-size: 0.9rem; line-height: 1.6; }
+    .empty-state a { color: var(--gold); font-weight: 600; }
+
+    .timeout-notice {
+      text-align: center; padding: 1rem;
+      font-size: 0.82rem; color: var(--slate-light);
+      background: var(--warm-white); border-radius: 12px;
+      border: 1px solid rgba(61,79,92,0.08);
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 1rem; }
+      main { padding: 2rem 1rem 3rem; }
+      #map { height: 300px; }
+      .features-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <a href="/emergency" class="emergency-bar">
+    <span class="pulse"></span>
+    EMERGENCY — Tap to alert your contacts instantly
+  </a>
+
+  <nav>
+    <a href="/" class="nav-brand">SafeStep</a>
+    <a href="/dashboard/{{ user.id }}" class="nav-back">← Dashboard</a>
+  </nav>
+
+  <main>
+
+    <div class="page-header">
+      <div class="page-tag">🌿 Senior Citizens</div>
+      <h1>Your comfort,<br><em>every step of the way.</em></h1>
+      <p>Find elevators, rest spots, and accessible facilities near you — in real time.</p>
+    </div>
+
+    <div class="filter-bar">
+      <button class="pill active" onclick="setFilter(this, 'all')">🗺️ All Nearby</button>
+      <button class="pill" onclick="setFilter(this, 'elevator')">🛗 Elevators</button>
+      <button class="pill" onclick="setFilter(this, 'rest')">🪑 Rest Spots</button>
+      <button class="pill" onclick="setFilter(this, 'washroom')">🚻 Washrooms</button>
+      <button class="pill" onclick="setFilter(this, 'hospital')">🏥 Hospitals</button>
+    </div>
+
+    <div class="map-wrap">
+      <div class="map-header">
+        <span class="map-title">Accessibility Map</span>
+        <button class="locate-btn" id="locate-btn" onclick="locateMe()">📍 Use My Location</button>
+      </div>
+      <div id="map-placeholder" class="map-placeholder">
+        <div class="map-icon">🗺️</div>
+        <p>Tap "Use My Location" to see accessible spots near you on the map.</p>
+      </div>
+      <div id="map"></div>
+    </div>
+
+    <p class="section-label">Quick Feature Filters</p>
+    <div class="features-grid">
+      <div class="feature-card" onclick="toggleFeature('elevator', this)">
+        <div class="feature-icon">🛗</div>
+        <div class="feature-name">Elevators Only</div>
+        <p class="feature-desc">Filter locations to avoid stairs entirely.</p>
+        <div class="feature-status" id="status-elevator">Off</div>
+      </div>
+      <div class="feature-card" onclick="toggleFeature('rest', this)">
+        <div class="feature-icon">🪑</div>
+        <div class="feature-name">Rest Spots</div>
+        <p class="feature-desc">Show benches and seating areas along your route.</p>
+        <div class="feature-status" id="status-rest">Off</div>
+      </div>
+      <div class="feature-card" onclick="toggleFeature('washroom', this)">
+        <div class="feature-icon">🚻</div>
+        <div class="feature-name">Accessible Washrooms</div>
+        <p class="feature-desc">Locate the nearest accessible washroom facilities.</p>
+        <div class="feature-status" id="status-washroom">Off</div>
+      </div>
+    </div>
+
+    <div class="results-section">
+      <p class="section-label">Nearby Results</p>
+      <div class="results-list" id="results-list">
+        <div class="empty-state">
+          <div class="empty-icon">📍</div>
+          <p>Enable your location to see accessible spots nearby.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let map = null;
+    let userMarker = null;
+    let placeMarkers = [];
+    let userLat = null, userLng = null;
+    let activeFilter = 'all';
+    let activeFeatures = new Set();
+    let fetchTimeout = null;
+
+    // ── Filter pills ──────────────────────────────────────────
+    function setFilter(btn, filter) {
+      document.querySelectorAll('.filter-bar .pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = filter;
+      if (userLat !== null) fetchNearby(userLat, userLng);
+    }
+
+    // ── Feature toggles ───────────────────────────────────────
+    function toggleFeature(key, el) {
+      const statusEl = document.getElementById('status-' + key);
+      if (activeFeatures.has(key)) {
+        activeFeatures.delete(key);
+        el.classList.remove('active-feature');
+        statusEl.textContent = 'Off';
+        statusEl.classList.remove('on');
+      } else {
+        activeFeatures.add(key);
+        el.classList.add('active-feature');
+        statusEl.textContent = 'Active';
+        statusEl.classList.add('on');
+        // Auto-switch filter pill to match
+        const filterMap = { elevator: 'elevator', rest: 'rest', washroom: 'washroom' };
+        if (filterMap[key]) {
+          const matchPill = [...document.querySelectorAll('.filter-bar .pill')]
+            .find(p => p.getAttribute('onclick')?.includes(`'${filterMap[key]}'`));
+          if (matchPill) { setFilter(matchPill, filterMap[key]); return; }
+        }
+      }
+      if (userLat !== null) fetchNearby(userLat, userLng);
+    }
+
+    // ── Geolocation ───────────────────────────────────────────
+    function locateMe() {
+      if (!navigator.geolocation) { alert('Geolocation not supported by your browser.'); return; }
+      const btn = document.getElementById('locate-btn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Locating…';
+
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          userLat = pos.coords.latitude;
+          userLng = pos.coords.longitude;
+          btn.textContent = '✅ Located';
+          initMap(userLat, userLng);
+          fetchNearby(userLat, userLng);
+        },
+        () => {
+          btn.disabled = false;
+          btn.textContent = '📍 Use My Location';
+          alert('Could not get your location. Please allow location access and try again.');
+        },
+        { timeout: 10000, maximumAge: 60000 }
+      );
+    }
+
+    // ── Init Leaflet ──────────────────────────────────────────
+    function initMap(lat, lng) {
+      document.getElementById('map-placeholder').style.display = 'none';
+      document.getElementById('map').style.display = 'block';
+
+      map = L.map('map').setView([lat, lng], 16);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+      }).addTo(map);
+
+      // Gold user dot
+      const userIcon = L.divIcon({
+        className: '',
+        html: `<div style="width:16px;height:16px;background:#D4A847;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>`,
+        iconSize: [16, 16], iconAnchor: [8, 8],
+      });
+      userMarker = L.marker([lat, lng], { icon: userIcon })
+        .addTo(map)
+        .bindPopup('<strong>You are here</strong>')
+        .openPopup();
+    }
+
+    // ── Fetch from backend → Overpass ─────────────────────────
+    function fetchNearby(lat, lng) {
+      const list = document.getElementById('results-list');
+      list.innerHTML = `
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>`;
+
+      // Clear old markers
+      placeMarkers.forEach(m => map && map.removeLayer(m));
+      placeMarkers = [];
+
+      // 12-second timeout fallback
+      clearTimeout(fetchTimeout);
+      fetchTimeout = setTimeout(() => {
+        list.innerHTML = `<div class="timeout-notice">⏱️ Overpass API is busy. Please try again in a moment.</div>`;
+      }, 12000);
+
+      fetch(`/api/nearby?lat=${lat}&lng=${lng}&filter=${activeFilter}`)
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(data => { clearTimeout(fetchTimeout); renderResults(data.places || [], lat, lng, list); })
+        .catch(() => {
+          clearTimeout(fetchTimeout);
+          list.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">⚠️</div>
+              <p>Could not load nearby places. Check your connection.<br/>
+              <a href="https://www.google.com/maps/search/accessible+places/@${lat},${lng},15z" target="_blank">Try Google Maps →</a></p>
+            </div>`;
+        });
+    }
+
+    // ── Render results ────────────────────────────────────────
+    function renderResults(places, lat, lng, list) {
+      if (!places.length) {
+        list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>No accessible spots found for this filter. Try a different category.</p></div>`;
+        return;
+      }
+
+      const placeIcon = L.divIcon({
+        className: '',
+        html: `<div style="width:12px;height:12px;background:#6B8F71;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);"></div>`,
+        iconSize: [12, 12], iconAnchor: [6, 6],
+      });
+
+      list.innerHTML = places.map((place, i) => {
+        const dist = place.distance_m ? formatDist(place.distance_m) : '';
+        const tags = getTagsForPlace(place);
+
+        if (map && place.lat && place.lng) {
+          const m = L.marker([place.lat, place.lng], { icon: placeIcon })
+            .addTo(map)
+            .bindPopup(`<strong>${escHtml(place.name)}</strong>${place.address ? '<br/>' + escHtml(place.address) : ''}`);
+          placeMarkers.push(m);
+        }
+
+        return `
+          <div class="result-item" style="animation:fadeUp 0.4s ${i*0.06}s ease both;opacity:0"
+               onclick="flyTo(${place.lat},${place.lng})">
+            <div class="result-dot"></div>
+            <div class="result-info">
+              <div class="result-name">${escHtml(place.name)}</div>
+              ${place.address ? `<div class="result-meta">${escHtml(place.address)}</div>` : ''}
+              ${tags.length ? `<div class="result-tags">${tags.map(t=>`<span class="result-tag">${t}</span>`).join('')}</div>` : ''}
+            </div>
+            ${dist ? `<div class="result-dist">${dist}</div>` : ''}
+          </div>`;
+      }).join('');
+    }
+
+    // ── Open Google Maps directions on click ──────────────────
+    function flyTo(lat, lng) {
+      if (map && lat && lng) map.flyTo([lat, lng], 18, { duration: 1 });
+      // Open Google Maps directions from current location to this place
+      if (userLat && userLng) {
+        window.open(
+          `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${lat},${lng}&travelmode=walking`,
+          '_blank'
+        );
+      } else {
+        window.open(
+          `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+          '_blank'
+        );
+      }
+    }
+
+    // ── Tags from OSM data ────────────────────────────────────
+    function getTagsForPlace(place) {
+      const tags = [];
+      const types = place.types || [];
+      if (types.some(t => ['hospital','clinic','pharmacy'].includes(t))) tags.push('🏥 Medical');
+      if (types.includes('elevator'))  tags.push('🛗 Elevator');
+      if (types.includes('bench'))     tags.push('🪑 Seating');
+      if (types.includes('toilets'))   tags.push('🚻 Accessible WC');
+      if (place.wheelchair === 'yes')  tags.push('♿ Wheelchair OK');
+      return tags;
+    }
+
+    function formatDist(m) {
+      return m < 1000 ? `${Math.round(m)} m` : `${(m/1000).toFixed(1)} km`;
+    }
+
+    function escHtml(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+  </script>
+</body>
+</html>

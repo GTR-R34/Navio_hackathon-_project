@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Navio — Emergency</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --dark:      #1A2E35;
+      --teal:      #02A896;
+      --orange:    #E85D26;
+      --cream:     #F5F0E8;
+      --white:     #FFFFFF;
+      --gray:      #6B7280;
+      --light:     #E6F9F7;
+      --red:       #DC2626;
+      --red-light: #FEF2F2;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--dark);
+      overflow-x: hidden;
+    }
+
+    /* ── BACKGROUND BLOBS ── */
+    .bg-blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.18;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob1 { width: 500px; height: 500px; background: var(--orange); top: -100px; left: -100px; animation: drift 10s ease-in-out infinite alternate; }
+    .blob2 { width: 400px; height: 400px; background: var(--orange); bottom: -80px; right: -80px; animation: drift 13s ease-in-out infinite alternate-reverse; }
+    .blob3 { width: 300px; height: 300px; background: var(--teal); top: 50%; left: 50%; transform: translate(-50%,-50%); animation: drift 8s ease-in-out infinite alternate; }
+
+    @keyframes drift {
+      from { transform: translate(0, 0) scale(1); }
+      to   { transform: translate(30px, 20px) scale(1.05); }
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.2rem 3rem;
+      background: rgba(245,240,232,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(232,93,38,0.2);
+    }
+
+    .nav-logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.5rem;
+      color: var(--dark);
+      letter-spacing: -0.5px;
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--teal); }
+
+    .nav-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--red-light);
+      border: 1.5px solid rgba(220,38,38,0.3);
+      color: var(--red);
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.35rem 0.9rem;
+      border-radius: 100px;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── PAGE WRAPPER ── */
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      padding: 7rem 2rem 4rem;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    /* ── HERO TAG ── */
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--red-light);
+      border: 1px solid rgba(220,38,38,0.3);
+      color: var(--red);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 0.4rem 1rem;
+      border-radius: 100px;
+      margin-bottom: 1.5rem;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      animation: fadeUp 0.6s ease 0.1s both;
+      margin-bottom: 0.8rem;
+    }
+    .page-header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2.2rem, 5vw, 3.4rem);
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+    }
+    .page-header h1 em {
+      font-style: italic;
+      color: var(--orange);
+    }
+    .page-subtitle {
+      color: var(--gray);
+      font-size: 1rem;
+      line-height: 1.7;
+      font-weight: 300;
+      max-width: 520px;
+      animation: fadeUp 0.6s ease 0.2s both;
+      margin-bottom: 2.5rem;
+    }
+
+    /* ── NO-LOGIN NOTICE ── */
+    .no-login-notice {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      background: var(--light);
+      border: 1px solid var(--teal);
+      border-radius: 12px;
+      padding: 0.9rem 1.2rem;
+      font-size: 0.85rem;
+      color: var(--dark);
+      font-weight: 500;
+      margin-bottom: 2.5rem;
+      animation: fadeUp 0.6s ease 0.25s both;
+    }
+    .no-login-notice span.icon { font-size: 1.1rem; }
+
+    /* ── SOS BUTTON ── */
+    .sos-wrap {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 3rem;
+      animation: fadeUp 0.6s ease 0.3s both;
+    }
+
+    .sos-btn {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: var(--red);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      color: white;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: transform 0.2s ease;
+      animation: sosPulse 2.5s ease infinite;
+      text-decoration: none;
+    }
+    .sos-btn:hover { transform: scale(1.06); box-shadow: 0 12px 40px rgba(220,38,38,0.5); }
+    .sos-btn:active { transform: scale(0.97); }
+    .sos-btn .sos-icon { font-size: 2.2rem; line-height: 1; }
+    .sos-label { font-size: 0.7rem; color: rgba(255,255,255,0.75); letter-spacing: 1.5px; }
+
+    @keyframes sosPulse {
+      0%   { box-shadow: 0 0 0 0 rgba(220,38,38,0.5); }
+      60%  { box-shadow: 0 0 0 22px rgba(220,38,38,0); }
+      100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); }
+    }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 1rem;
+    }
+
+    /* ── SERVICES GRID ── */
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 3rem;
+      animation: fadeUp 0.6s ease 0.35s both;
+    }
+
+    .service-card {
+      background: var(--white);
+      border-radius: 18px;
+      padding: 1.5rem;
+      border: 1px solid rgba(0,0,0,0.07);
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
+    .service-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--red);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+    .service-card:hover { transform: translateY(-3px); box-shadow: 0 16px 32px rgba(0,0,0,0.08); }
+    .service-card:hover::before { transform: scaleX(1); }
+
+    .service-icon { font-size: 1.8rem; }
+    .service-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.05rem;
+    }
+    .service-number {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--red);
+      letter-spacing: 0.5px;
+    }
+    .service-desc {
+      font-size: 0.82rem;
+      color: var(--gray);
+      line-height: 1.5;
+    }
+    .call-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--red);
+      background: var(--red-light);
+      padding: 0.3rem 0.8rem;
+      border-radius: 100px;
+      margin-top: auto;
+      width: fit-content;
+      transition: background 0.2s;
+    }
+    .service-card:hover .call-chip { background: var(--red); color: white; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--dark);
+      color: var(--white);
+      padding: 0.8rem 1.6rem;
+      border-radius: 100px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      z-index: 200;
+      transition: transform 0.3s ease;
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 2rem;
+      color: var(--gray);
+      font-size: 0.82rem;
+      border-top: 1px solid rgba(0,0,0,0.08);
+    }
+    footer a { color: var(--teal); text-decoration: none; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      nav { padding: 1rem 1.5rem; }
+      .sos-btn { width: 120px; height: 120px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background blobs -->
+  <div class="bg-blob blob1"></div>
+  <div class="bg-blob blob2"></div>
+  <div class="bg-blob blob3"></div>
+
+  <!-- Nav — no login button intentionally -->
+  <nav>
+    <a href="/" class="nav-logo">Navi<span>o</span></a>
+    <div class="nav-badge">🚨 Emergency</div>
+  </nav>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Main Page -->
+  <main class="page">
+
+    <div class="hero-tag">🚨 No Login Required</div>
+
+    <div class="page-header">
+      <h1>Emergency <em>Help</em></h1>
+    </div>
+    <p class="page-subtitle">Reach emergency services instantly. No account needed — always accessible.</p>
+
+    <!-- No-login notice -->
+    <div class="no-login-notice">
+      <span class="icon">🔓</span>
+      <span>This page is fully public. No login required — ever.</span>
+    </div>
+
+    <!-- SOS Button — calls 112 directly -->
+    <div class="sos-wrap">
+      <a href="tel:112" class="sos-btn">
+        <span class="sos-icon">🆘</span>
+        <span>SOS</span>
+        <span class="sos-label">Calls 112</span>
+      </a>
+    </div>
+
+    <!-- Emergency Services -->
+    <div class="section-label">Emergency Services</div>
+    <div class="services-grid">
+
+      <a href="tel:112" class="service-card">
+        <div class="service-icon">🚑</div>
+        <div class="service-name">Ambulance</div>
+        <div class="service-number">112</div>
+        <div class="service-desc">Medical emergencies — immediate dispatch</div>
+        <div class="call-chip">📞 Call Now</div>
+      </a>
+
+      <a href="tel:100" class="service-card">
+        <div class="service-icon">🚔</div>
+        <div class="service-name">Police</div>
+        <div class="service-number">100</div>
+        <div class="service-desc">Safety threat or criminal incident</div>
+        <div class="call-chip">📞 Call Now</div>
+      </a>
+
+      <a href="tel:101" class="service-card">
+        <div class="service-icon">🚒</div>
+        <div class="service-name">Fire Brigade</div>
+        <div class="service-number">101</div>
+        <div class="service-desc">Fire, gas leak, or structural emergency</div>
+        <div class="call-chip">📞 Call Now</div>
+      </a>
+
+      <div class="service-card" onclick="findNearestHospital()">
+        <div class="service-icon">🏥</div>
+        <div class="service-name">Nearest Hospital</div>
+        <div class="service-number" id="hospital-number">Tap to find</div>
+        <div class="service-desc">Opens Google Maps with hospitals near your location</div>
+        <div class="call-chip">📍 Find Nearest</div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <footer>
+    Navio · Emergency access is always available without login · <a href="/">← Back to Home</a>
+  </footer>
+
+  <script>
+    function findNearestHospital() {
+      const el = document.getElementById('hospital-number');
+      el.textContent = 'Getting location...';
+
+      if (!navigator.geolocation) {
+        window.open('https://www.google.com/maps/search/hospital+near+me', '_blank');
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          el.textContent = 'Opening Maps...';
+          window.open(`https://www.google.com/maps/search/hospital/@${latitude},${longitude},14z`, '_blank');
+          showToast('📍 Opening nearest hospitals in Maps');
+        },
+        () => {
+          window.open('https://www.google.com/maps/search/hospital+near+me', '_blank');
+        }
+      );
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+  </script>
+
+</body>
+</html>

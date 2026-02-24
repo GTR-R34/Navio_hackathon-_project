@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>
+    {% if disability_type == 'blind' %}Visual Assist{% else %}Wheelchair Hub{% endif %}
+    — Navio
+</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+--cream:      #FAF7F2;
+--warm-white: #FFFCF8;
+--teal:       #02A896;
+--teal-light: #E6F9F7;
+--teal-dark:  #017A6E;
+--slate:      #1A2E35;
+--slate-mid:  #3D4F5C;
+--slate-light:#6B8090;
+--danger:     #C94A4A;
+--shadow:     0 4px 24px rgba(26,46,53,0.10);
+--shadow-lg:  0 12px 48px rgba(26,46,53,0.15);
+}
+body {
+font-family: 'DM Sans', sans-serif;
+background: var(--cream);
+color: var(--slate);
+min-height: 100vh;
+overflow-x: hidden;
+}
+body::before {
+content: '';
+position: fixed; inset: 0; z-index: 0;
+background:
+  radial-gradient(ellipse 60% 40% at 5% 10%, rgba(2,168,150,0.08) 0%, transparent 60%),
+  radial-gradient(ellipse 50% 50% at 95% 90%, rgba(2,168,150,0.06) 0%, transparent 60%);
+pointer-events: none;
+}
+/* ── Emergency bar ── */
+.emergency-bar {
+background: var(--danger);
+color: #fff; text-align: center;
+padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 600;
+letter-spacing: 0.02em; position: relative; z-index: 90;
+text-decoration: none; display: block; transition: background 0.2s;
+}
+.emergency-bar:hover { background: #a83333; }
+.pulse {
+display: inline-block; width: 8px; height: 8px;
+border-radius: 50%; background: #fff; margin-right: 8px;
+animation: pulse 1.4s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(1.4); }
+}
+/* ── Nav ── */
+nav {
+position: sticky; top: 0; z-index: 100;
+background: rgba(250,247,242,0.92);
+backdrop-filter: blur(12px);
+border-bottom: 1px solid rgba(2,168,150,0.12);
+padding: 0 2rem; height: 64px;
+display: flex; align-items: center; justify-content: space-between;
+}
+.nav-brand {
+font-family: 'DM Serif Display', serif;
+font-size: 1.5rem; color: var(--teal); text-decoration: none;
+}
+.nav-brand span { color: var(--slate); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-user {
+display: flex; align-items: center; gap: 0.5rem;
+font-size: 0.85rem; color: var(--slate-light); font-weight: 500;
+}
+.nav-avatar {
+width: 30px; height: 30px; border-radius: 50%;
+background: var(--teal); color: #fff;
+display: flex; align-items: center; justify-content: center;
+font-size: 0.78rem; font-weight: 700;
+}
+.nav-profile {
+font-size: 0.8rem; font-weight: 600; color: var(--slate-light);
+text-decoration: none;
+border: 1.5px solid rgba(61,79,92,0.2);
+border-radius: 999px; padding: 0.3rem 0.9rem;
+transition: all 0.2s;
+}
+.nav-profile:hover { color: var(--teal); border-color: var(--teal); }
+/* ── Main ── */
+main {
+position: relative; z-index: 1;
+max-width: 1000px; margin: 0 auto;
+padding: 3rem 1.5rem 5rem;
+}
+/* ── Page header ── */
+.page-header { margin-bottom: 2.5rem; animation: fadeUp 0.5s ease both; }
+.page-tag {
+display: inline-flex; align-items: center; gap: 0.5rem;
+background: var(--teal-light); border: 1px solid rgba(2,168,150,0.3);
+border-radius: 999px; padding: 0.35rem 1rem;
+font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
+text-transform: uppercase; color: var(--teal); margin-bottom: 1rem;
+}
+.page-header h1 {
+font-family: 'DM Serif Display', serif;
+font-size: clamp(2rem, 5vw, 2.8rem);
+color: var(--slate); line-height: 1.1; letter-spacing: -0.03em;
+}
+.page-header h1 em { color: var(--teal); font-style: italic; }
+.page-header p {
+margin-top: 0.75rem; font-size: 1rem;
+color: var(--slate-light); max-width: 520px; line-height: 1.6;
+}
+/* ── Section label ── */
+.section-label {
+font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em;
+text-transform: uppercase; color: var(--slate-light); margin-bottom: 1rem;
+}
+/* ── Filter pills ── */
+.filter-bar {
+display: flex; flex-wrap: wrap; gap: 0.5rem;
+margin-bottom: 2rem; animation: fadeUp 0.5s 0.1s ease both;
+}
+.pill {
+display: inline-flex; align-items: center; gap: 0.4rem;
+padding: 0.5rem 1.1rem; border-radius: 999px;
+border: 1.5px solid rgba(61,79,92,0.15);
+background: var(--warm-white);
+font-size: 0.82rem; font-weight: 600;
+color: var(--slate-light); cursor: pointer; transition: all 0.2s;
+}
+.pill:hover, .pill.active {
+background: var(--teal); border-color: var(--teal); color: #fff;
+}
+/* ── Map ── */
+.map-wrap {
+background: var(--warm-white);
+border: 1px solid rgba(61,79,92,0.08);
+border-radius: 24px; overflow: hidden;
+box-shadow: var(--shadow-lg); margin-bottom: 2rem;
+animation: fadeUp 0.5s 0.15s ease both;
+}
+.map-header {
+padding: 1.25rem 1.5rem;
+border-bottom: 1px solid rgba(61,79,92,0.07);
+display: flex; align-items: center; justify-content: space-between;
+gap: 1rem; flex-wrap: wrap;
+}
+.map-title {
+font-family: 'DM Serif Display', serif;
+font-size: 1.1rem; color: var(--slate);
+}
+.locate-btn {
+font-family: 'DM Sans', sans-serif;
+font-size: 0.82rem; font-weight: 600;
+background: var(--teal); color: #fff;
+border: none; border-radius: 999px;
+padding: 0.5rem 1.2rem; cursor: pointer;
+display: flex; align-items: center; gap: 0.4rem;
+transition: background 0.2s, transform 0.2s;
+}
+.locate-btn:hover { background: var(--teal-dark); transform: scale(1.03); }
+.locate-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+#map { height: 400px; width: 100%; z-index: 1; display: none; }
+.map-placeholder {
+height: 400px; display: flex; flex-direction: column;
+align-items: center; justify-content: center; gap: 1rem;
+background: linear-gradient(135deg, #EBF8F7 0%, #E0F4F2 100%);
+color: var(--slate-light);
+}
+.map-placeholder .map-icon { font-size: 3rem; }
+.map-placeholder p { font-size: 0.9rem; text-align: center; max-width: 280px; line-height: 1.5; }
+/* ── Place cards grid ── */
+.places-grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+gap: 1rem; margin-bottom: 2.5rem;
+animation: fadeUp 0.5s 0.25s ease both;
+}
+.place-card {
+background: var(--warm-white);
+border: 1px solid rgba(61,79,92,0.08);
+border-radius: 18px; padding: 1.4rem;
+box-shadow: var(--shadow); cursor: pointer;
+transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+position: relative; overflow: hidden;
+}
+.place-card::after {
+content: ''; position: absolute;
+bottom: 0; left: 0; right: 0; height: 3px;
+background: var(--teal);
+transform: scaleX(0); transform-origin: left;
+transition: transform 0.3s;
+}
+.place-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: rgba(2,168,150,0.3); }
+.place-card:hover::after { transform: scaleX(1); }
+.place-icon { font-size: 1.6rem; margin-bottom: 0.6rem; }
+.place-name { font-weight: 600; font-size: 0.95rem; color: var(--slate); margin-bottom: 0.2rem; }
+.place-dist { font-size: 0.78rem; color: var(--slate-light); margin-bottom: 0.7rem; }
+.place-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.9rem; }
+.place-tag {
+font-size: 0.68rem; font-weight: 600;
+padding: 0.2rem 0.55rem; border-radius: 999px;
+background: var(--teal-light); color: var(--teal);
+}
+.place-actions { display: flex; gap: 0.5rem; }
+.place-btn {
+flex: 1; padding: 0.5rem; border-radius: 10px;
+font-size: 0.78rem; font-weight: 600;
+cursor: pointer; border: 1.5px solid rgba(61,79,92,0.15);
+background: transparent; font-family: 'DM Sans', sans-serif;
+transition: all 0.2s; text-align: center; text-decoration: none;
+color: var(--slate);
+}
+.place-btn:hover { border-color: var(--teal); color: var(--teal); }
+.place-btn.primary {
+background: var(--teal); border-color: var(--teal); color: #fff;
+}
+.place-btn.primary:hover { background: var(--teal-dark); }
+/* ── Skeleton loader ── */
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton-card {
+height: 180px; border-radius: 18px;
+background: linear-gradient(90deg, #e8f7f6 25%, #d8f0ee 50%, #e8f7f6 75%);
+background-size: 200% 100%; animation: shimmer 1.4s infinite;
+}
+.skeleton-card:nth-child(2) { animation-delay: 0.15s; }
+.skeleton-card:nth-child(3) { animation-delay: 0.30s; }
+/* ── Empty state ── */
+.empty-state {
+grid-column: 1 / -1; text-align: center;
+padding: 2.5rem 1rem; color: var(--slate-light);
+}
+.empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+.empty-state p { font-size: 0.9rem; line-height: 1.6; }
+.empty-state a { color: var(--teal); font-weight: 600; }
+/* ── BLIND MODE ── */
+.speak-hero {
+text-align: center; margin-bottom: 2rem;
+animation: fadeUp 0.5s 0.1s ease both;
+}
+.speak-btn {
+width: 180px; height: 180px; border-radius: 50%;
+background: var(--slate); border: none; cursor: pointer;
+display: inline-flex; flex-direction: column;
+align-items: center; justify-content: center; gap: 0.5rem;
+color: #fff; font-family: 'DM Sans', sans-serif;
+font-size: 0.85rem; font-weight: 600; letter-spacing: 0.5px;
+transition: transform 0.2s, box-shadow 0.2s;
+box-shadow: 0 8px 32px rgba(26,46,53,0.25);
+}
+.speak-btn:hover { transform: scale(1.06); box-shadow: 0 16px 48px rgba(26,46,53,0.3); }
+.speak-btn:active { transform: scale(0.97); }
+.speak-btn .speak-icon { font-size: 2.5rem; }
+.speak-hint { margin-top: 1rem; font-size: 0.82rem; color: var(--slate-light); }
+.speak-hint kbd {
+background: var(--warm-white); border: 1px solid rgba(61,79,92,0.15);
+border-radius: 6px; padding: 0.1rem 0.45rem;
+font-size: 0.75rem; font-family: monospace;
+}
+.audio-card {
+background: var(--slate);
+border-radius: 24px; padding: 2rem 2.5rem;
+margin-bottom: 2rem; position: relative; overflow: hidden;
+animation: fadeUp 0.5s 0.2s ease both;
+}
+.audio-card::after {
+content: '🎧'; position: absolute;
+right: 2rem; top: 50%; transform: translateY(-50%);
+font-size: 5rem; opacity: 0.07; pointer-events: none;
+}
+.audio-card .section-label { color: rgba(255,255,255,0.45); margin-bottom: 0.5rem; }
+.audio-card h3 {
+font-family: 'DM Serif Display', serif;
+color: #fff; font-size: 1.6rem; margin-bottom: 0.5rem;
+}
+.audio-card p { color: rgba(255,255,255,0.5); font-size: 0.88rem; line-height: 1.6; margin-bottom: 1.5rem; }
+.audio-controls { display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: center; }
+.audio-btn {
+display: inline-flex; align-items: center; gap: 0.5rem;
+padding: 0.7rem 1.5rem; border-radius: 999px;
+font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600;
+cursor: pointer; border: none; transition: all 0.2s;
+}
+.audio-btn.start { background: var(--teal); color: #fff; }
+.audio-btn.start:hover { background: var(--teal-dark); }
+.audio-btn.stop { background: rgba(255,255,255,0.1); color: #fff; border: 1.5px solid rgba(255,255,255,0.2); }
+.audio-btn.stop:hover { background: rgba(255,255,255,0.2); }
+.audio-status { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: rgba(255,255,255,0.6); }
+.audio-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ADE80; animation: blink 1.5s infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+.dest-card {
+background: var(--warm-white);
+border: 1px solid rgba(61,79,92,0.08);
+border-radius: 20px; padding: 1.5rem;
+margin-bottom: 2rem; box-shadow: var(--shadow);
+animation: fadeUp 0.5s 0.25s ease both;
+}
+.dest-row { display: flex; gap: 0.8rem; margin-top: 0.75rem; }
+.dest-input {
+flex: 1; padding: 0.8rem 1.1rem;
+border: 1.5px solid rgba(61,79,92,0.15); border-radius: 12px;
+font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+outline: none; transition: border-color 0.2s;
+background: var(--cream);
+}
+.dest-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(2,168,150,0.1); }
+.dest-go {
+background: var(--teal); color: #fff;
+border: none; border-radius: 12px;
+padding: 0.8rem 1.4rem; font-family: 'DM Sans', sans-serif;
+font-size: 0.9rem; font-weight: 600; cursor: pointer;
+transition: background 0.2s;
+}
+.dest-go:hover { background: var(--teal-dark); }
+.dest-hint { font-size: 0.75rem; color: var(--slate-light); margin-top: 0.5rem; }
+.nearby-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem; animation: fadeUp 0.5s 0.3s ease both; }
+.nearby-item {
+background: var(--warm-white);
+border: 1px solid rgba(61,79,92,0.07);
+border-radius: 14px; padding: 1rem 1.25rem;
+display: flex; align-items: center; gap: 1rem;
+box-shadow: var(--shadow);
+}
+.nearby-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--teal); flex-shrink: 0; }
+.nearby-info { flex: 1; }
+.nearby-name { font-weight: 600; font-size: 0.9rem; color: var(--slate); }
+.nearby-meta { font-size: 0.77rem; color: var(--slate-light); margin-top: 0.15rem; }
+.nearby-speak {
+font-size: 0.78rem; font-weight: 600; color: var(--teal);
+background: var(--teal-light); border: none;
+border-radius: 999px; padding: 0.3rem 0.8rem;
+cursor: pointer; font-family: 'DM Sans', sans-serif;
+transition: background 0.2s;
+}
+.nearby-speak:hover { background: rgba(2,168,150,0.2); }
+/* ── Toast ── */
+.toast {
+position: fixed; bottom: 2rem; left: 50%;
+transform: translateX(-50%) translateY(80px);
+background: var(--slate); color: #fff;
+padding: 0.75rem 1.5rem; border-radius: 999px;
+font-size: 0.85rem; font-weight: 500; z-index: 200;
+transition: transform 0.3s; white-space: nowrap;
+pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (max-width: 600px) {
+nav { padding: 0 1rem; }
+main { padding: 2rem 1rem 4rem; }
+#map { height: 300px; }
+.audio-card { padding: 1.5rem; }
+.audio-card::after { display: none; }
+.dest-row { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<a href="/emergency" class="emergency-bar">
+  <span class="pulse"></span>
+  EMERGENCY — Tap to alert your contacts instantly
+</a>
+
+<nav>
+  <a href="/" class="nav-brand">Navi<span>o</span></a>
+  <div class="nav-right">
+    <div class="nav-user">
+      <div class="nav-avatar">{{ user.name[0] | upper }}</div>
+      {{ user.name.split(' ')[0] }}
+    </div>
+    <a href="/dashboard/{{ user.id }}" class="nav-profile">My Profile</a>
+  </div>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<main>
+  <!-- Page header -->
+  <div class="page-header">
+    <div class="page-tag">
+      {% if disability_type == 'blind' %}🦯 Visual Assist Mode
+      {% else %}♿ Wheelchair Mode{% endif %}
+    </div>
+    <h1>
+      {% if disability_type == 'blind' %}Navigate with <em>Confidence</em>
+      {% else %}Accessible <em>Places Near You</em>{% endif %}
+    </h1>
+    <p>
+      {% if disability_type == 'blind' %}Audio-guided navigation and nearby accessibility info, read aloud as you move.
+      {% else %}Find ramps, accessible washrooms, parking, and wheelchair-friendly routes near you.{% endif %}
+    </p>
+  </div>
+
+  <!-- ════════ WHEELCHAIR MODE ════════ -->
+  {% if disability_type != 'blind' %}
+
+  <div class="filter-bar">
+    <button class="pill active" onclick="setFilter(this, 'all')">🗺️ All Nearby</button>
+    <button class="pill" onclick="setFilter(this, 'washroom')">🚻 Accessible WC</button>
+    <button class="pill" onclick="setFilter(this, 'hospital')">🏥 Hospitals</button>
+    <button class="pill" onclick="setFilter(this, 'rest')">🪑 Rest Spots</button>
+    <button class="pill" onclick="setFilter(this, 'elevator')">🛗 Elevators</button>
+  </div>
+
+  <div class="map-wrap">
+    <div class="map-header">
+      <span class="map-title">Accessibility Map</span>
+      <button class="locate-btn" id="locate-btn" onclick="locateMe()">📍 Use My Location</button>
+    </div>
+    <div id="map-placeholder" class="map-placeholder">
+      <div class="map-icon">🗺️</div>
+      <p>Tap "Use My Location" to see accessible spots near you.</p>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <p class="section-label">Nearby Accessible Places</p>
+  <div class="places-grid" id="places-grid">
+    <div class="empty-state">
+      <div class="empty-icon">📍</div>
+      <p>Enable your location to see accessible places nearby.</p>
+    </div>
+  </div>
+
+  <!-- ════════ BLIND / VISUAL ASSIST MODE ════════ -->
+  {% else %}
+
+  <div class="speak-hero">
+    <button class="speak-btn" onclick="readSurroundings()" aria-label="Tap to hear surroundings">
+      <span class="speak-icon">🔊</span>
+      <span>Read</span>
+      <span>Surroundings</span>
+    </button>
+    <p class="speak-hint">Tap to hear nearby places · or press <kbd>Space</kbd></p>
+  </div>
+
+  <div class="audio-card">
+    <p class="section-label">Audio Navigation</p>
+    <h3>Turn-by-turn voice guidance</h3>
+    <p>Enter your destination and we'll open Google Maps with accessible routing and spoken directions.</p>
+    <div class="audio-controls">
+      <button class="audio-btn start" id="audio-start-btn" onclick="startAudioNav()">🎙️ Start Navigation</button>
+      <button class="audio-btn stop"  id="audio-stop-btn"  onclick="stopAudioNav()" style="display:none;">⏹ Stop</button>
+      <div class="audio-status" id="audio-status" style="display:none;">
+        <div class="audio-dot"></div>
+        <span id="audio-status-text">Navigation active</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dest-card">
+    <p class="section-label">Set Destination</p>
+    <div class="dest-row">
+      <input type="text" class="dest-input" id="dest-input"
+        placeholder="e.g. Apollo Hospital, Brigade Road…"
+        aria-label="Enter your destination"
+        onkeydown="if(event.key==='Enter') navigateTo()"/>
+      <button class="dest-go" onclick="navigateTo()">Go →</button>
+    </div>
+    <p class="dest-hint">Opens Google Maps with accessible walking route</p>
+  </div>
+
+  <p class="section-label">Nearby Accessible Places</p>
+  <div class="nearby-list" id="nearby-list">
+    <div class="empty-state" style="grid-column:unset;">
+      <div class="empty-icon">📍</div>
+      <p>Tap "Read Surroundings" to find accessible places near you.</p>
+    </div>
+  </div>
+
+  {% endif %}
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── State ──────────────────────────────────────────────────
+let map = null;
+let userMarker = null;
+let placeMarkers = [];
+let userLat = null, userLng = null;
+let activeFilter = 'all';
+let nearbyForSpeech = [];
+const mode = '{{ disability_type }}';
+
+// ── Toast ──────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Speech ─────────────────────────────────────────────────
+function speakText(text) {
+  if (!('speechSynthesis' in window)) { showToast('Speech not supported in this browser'); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 0.9; u.pitch = 1; u.lang = 'en-IN';
+  window.speechSynthesis.speak(u);
+}
+
+// ── Filter pills ───────────────────────────────────────────
+function setFilter(btn, filter) {
+  document.querySelectorAll('.filter-bar .pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  activeFilter = filter;
+  if (userLat !== null) fetchNearby(userLat, userLng);
+}
+
+// ── Geolocation ────────────────────────────────────────────
+function locateMe() {
+  if (!navigator.geolocation) { showToast('Geolocation not supported'); return; }
+  const btn = document.getElementById('locate-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Locating…'; }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      userLat = pos.coords.latitude;
+      userLng = pos.coords.longitude;
+      if (btn) btn.textContent = '✅ Located';
+      if (mode !== 'blind') {
+        initMap(userLat, userLng);
+        fetchNearby(userLat, userLng);
+      } else {
+        fetchNearbyBlind(userLat, userLng);
+      }
+    },
+    () => {
+      if (btn) { btn.disabled = false; btn.textContent = '📍 Use My Location'; }
+      showToast('Could not get location — please allow access');
+    },
+    { timeout: 10000, maximumAge: 60000 }
+  );
+}
+
+// ── Init Leaflet map ───────────────────────────────────────
+function initMap(lat, lng) {
+  document.getElementById('map-placeholder').style.display = 'none';
+  document.getElementById('map').style.display = 'block';
+  map = L.map('map').setView([lat, lng], 16);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    maxZoom: 19,
+  }).addTo(map);
+  const userIcon = L.divIcon({
+    className: '',
+    html: `<div style="width:16px;height:16px;background:#02A896;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>`,
+    iconSize: [16,16], iconAnchor: [8,8],
+  });
+  userMarker = L.marker([lat, lng], { icon: userIcon })
+    .addTo(map).bindPopup('<strong>You are here</strong>').openPopup();
+}
+
+// ── Fetch nearby (wheelchair) — direct Overpass API ────────
+async function fetchNearby(lat, lng) {
+  const grid = document.getElementById('places-grid');
+  grid.innerHTML = `
+    <div class="skeleton-card"></div>
+    <div class="skeleton-card"></div>
+    <div class="skeleton-card"></div>`;
+  placeMarkers.forEach(m => map && map.removeLayer(m));
+  placeMarkers = [];
+
+  // Map filter to Overpass query tags
+  const filterMap = {
+    all:      '["amenity"~"hospital|clinic|toilets|pharmacy|cafe|restaurant|bench|shelter"]',
+    washroom: '["amenity"="toilets"]',
+    hospital: '["amenity"~"hospital|clinic"]',
+    rest:     '["amenity"~"bench|shelter"]',
+    elevator: '["highway"="elevator"]',
+  };
+  const tag = filterMap[activeFilter] || filterMap.all;
+  const query = `[out:json][timeout:25];
+    (
+      node${tag}(around:2000,${lat},${lng});
+      way${tag}(around:2000,${lat},${lng});
+    );
+    out center 20;`;
+
+  try {
+    const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+
+    const places = (data.elements || [])
+      .filter(e => e.tags && (e.tags.name || e.tags.amenity || e.tags.highway))
+      .map(e => ({
+        name: e.tags.name || e.tags.amenity || 'Accessible Place',
+        lat:  e.lat  || (e.center && e.center.lat),
+        lng:  e.lon  || (e.center && e.center.lon),
+        types: [e.tags.amenity || e.tags.highway || ''],
+        wheelchair: e.tags.wheelchair,
+        distance_m: haversine(lat, lng,
+          e.lat  || (e.center && e.center.lat),
+          e.lon  || (e.center && e.center.lon)
+        ) * 1000,
+      }))
+      .filter(p => p.lat && p.lng)
+      .sort((a, b) => a.distance_m - b.distance_m)
+      .slice(0, 12);
+
+    renderWheelchairCards(places, lat, lng, grid);
+  } catch (err) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">⚠️</div>
+      <p>Could not load places. Check your connection.<br/>
+      <a href="https://www.google.com/maps/search/wheelchair+accessible/@${lat},${lng},15z" target="_blank">Try Google Maps →</a></p>
+    </div>`;
+  }
+}
+
+// ── Render wheelchair cards ────────────────────────────────
+function renderWheelchairCards(places, lat, lng, grid) {
+  if (!places.length) {
+    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>No accessible spots found nearby. Try a different filter or zoom out.</p></div>`;
+    return;
+  }
+  const placeIcon = L.divIcon({
+    className: '',
+    html: `<div style="width:12px;height:12px;background:#02A896;border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);"></div>`,
+    iconSize: [12,12], iconAnchor: [6,6],
+  });
+  grid.innerHTML = places.map((place, i) => {
+    const dist    = place.distance_m ? formatDist(place.distance_m) : '';
+    const icon    = placeEmoji(place.types);
+    const tags    = buildTags(place);
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${place.lat},${place.lng}&travelmode=walking`;
+    const speakStr = `${place.name}. ${dist} away. ${tags.map(t => t.replace(/[^\w\s]/g,'')).join(', ')}.`;
+    if (map && place.lat && place.lng) {
+      const m = L.marker([place.lat, place.lng], { icon: placeIcon })
+        .addTo(map)
+        .bindPopup(`<strong>${escHtml(place.name)}</strong>`);
+      placeMarkers.push(m);
+    }
+    return `
+      <div class="place-card" style="animation:fadeUp 0.4s ${i*0.07}s ease both;opacity:0;">
+        <div class="place-icon">${icon}</div>
+        <div class="place-name">${escHtml(place.name)}</div>
+        <div class="place-dist">📍 ${dist}</div>
+        <div class="place-tags">${tags.map(t=>`<span class="place-tag">${t}</span>`).join('')}</div>
+        <div class="place-actions">
+          <a href="${mapsUrl}" target="_blank" class="place-btn primary">Navigate →</a>
+          <button class="place-btn" onclick="speakText('${speakStr.replace(/'/g,'')}')">🔊</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ── Fetch nearby (blind mode) ──────────────────────────────
+async function fetchNearbyBlind(lat, lng) {
+  const list = document.getElementById('nearby-list');
+  list.innerHTML = `<div style="padding:1rem;color:var(--slate-light);font-size:0.88rem;">⏳ Finding accessible places near you…</div>`;
+  const query = `[out:json][timeout:20];
+    (
+      node["amenity"~"hospital|clinic|pharmacy|toilets|bench|shelter|cafe|restaurant"](around:1500,${lat},${lng});
+      node["wheelchair"="yes"](around:1500,${lat},${lng});
+      node["leisure"="park"](around:1500,${lat},${lng});
+    );
+    out body 20;`;
+  try {
+    const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
+    const data = await res.json();
+    const elements = (data.elements || [])
+      .filter(e => e.tags && (e.tags.name || e.tags.amenity))
+      .slice(0, 10);
+    if (!elements.length) {
+      list.innerHTML = `<div class="empty-state" style="grid-column:unset;"><div class="empty-icon">🔍</div><p>No accessible places found nearby.</p></div>`;
+      speakText('No accessible places found within 1.5 kilometres.');
+      return;
+    }
+    nearbyForSpeech = elements.map(e => {
+      const name = e.tags.name || e.tags.amenity || 'Accessible place';
+      const dist = haversine(lat, lng, e.lat, e.lon);
+      return `${name}, ${dist < 1 ? Math.round(dist*1000)+' metres' : dist.toFixed(1)+' kilometres'} away`;
+    });
+    list.innerHTML = elements.map((el, i) => {
+      const name    = (el.tags.name || el.tags.amenity || 'Accessible Place').replace(/\b\w/g,c=>c.toUpperCase());
+      const dist    = haversine(lat, lng, el.lat, el.lon);
+      const distStr = dist < 1 ? `${Math.round(dist*1000)} m` : `${dist.toFixed(1)} km`;
+      const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${el.lat},${el.lon}&travelmode=walking`;
+      const speech  = `${name}, ${distStr} away.`;
+      return `
+        <div class="nearby-item" style="animation:fadeUp 0.4s ${i*0.06}s ease both;opacity:0;">
+          <div class="nearby-dot"></div>
+          <div class="nearby-info">
+            <div class="nearby-name">${escHtml(name)}</div>
+            <div class="nearby-meta">📍 ${distStr} · <a href="${mapsUrl}" target="_blank" style="color:var(--teal);font-weight:600;">Directions →</a></div>
+          </div>
+          <button class="nearby-speak" onclick="speakText('${speech.replace(/'/g,'')}')">🔊 Read</button>
+        </div>`;
+    }).join('');
+    speakText(`Found ${elements.length} accessible places nearby. ${nearbyForSpeech.slice(0,3).join('. ')}.`);
+  } catch {
+    list.innerHTML = `<div class="empty-state" style="grid-column:unset;"><div class="empty-icon">⚠️</div><p>Could not load places. Check your connection.</p></div>`;
+    speakText('Could not find nearby places. Please check your internet connection.');
+  }
+}
+
+// ── Read surroundings (blind mode) ────────────────────────
+function readSurroundings() {
+  if (!userLat) {
+    speakText('Getting your location. Please wait.');
+    locateMe();
+    return;
+  }
+  if (nearbyForSpeech.length) {
+    speakText(`Nearby accessible places: ${nearbyForSpeech.slice(0,5).join('. ')}.`);
+  } else {
+    speakText('Searching for accessible places near you.');
+    fetchNearbyBlind(userLat, userLng);
+  }
+}
+
+// ── Audio nav ──────────────────────────────────────────────
+function startAudioNav() {
+  document.getElementById('audio-start-btn').style.display = 'none';
+  document.getElementById('audio-stop-btn').style.display  = 'inline-flex';
+  document.getElementById('audio-status').style.display    = 'flex';
+  speakText('Audio navigation started. Enter your destination and tap Go.');
+  if (!userLat) locateMe();
+}
+function stopAudioNav() {
+  window.speechSynthesis.cancel();
+  document.getElementById('audio-start-btn').style.display = 'inline-flex';
+  document.getElementById('audio-stop-btn').style.display  = 'none';
+  document.getElementById('audio-status').style.display    = 'none';
+  showToast('Navigation stopped');
+}
+function navigateTo() {
+  const dest = document.getElementById('dest-input').value.trim();
+  if (!dest) { speakText('Please enter a destination first.'); return; }
+  speakText(`Opening navigation to ${dest}.`);
+  const origin = userLat ? `${userLat},${userLng}` : '';
+  setTimeout(() => window.open(
+    `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${encodeURIComponent(dest)}&travelmode=walking`,
+    '_blank'
+  ), 600);
+}
+
+// ── Helpers ────────────────────────────────────────────────
+function haversine(lat1, lng1, lat2, lng2) {
+  if (!lat1 || !lat2) return 9999;
+  const R = 6.371;
+  const dLat = (lat2-lat1)*Math.PI/180;
+  const dLng = (lng2-lng1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+function formatDist(m) {
+  return m < 1000 ? `${Math.round(m)} m` : `${(m/1000).toFixed(1)} km`;
+}
+function placeEmoji(types = []) {
+  if (types.some(t => ['hospital','clinic'].includes(t))) return '🏥';
+  if (types.includes('pharmacy'))   return '💊';
+  if (types.includes('toilets'))    return '🚻';
+  if (types.includes('bench'))      return '🪑';
+  if (types.includes('shelter'))    return '⛺';
+  if (types.includes('park'))       return '🌳';
+  if (types.includes('cafe'))       return '☕';
+  if (types.includes('restaurant')) return '🍽️';
+  if (types.includes('elevator'))   return '🛗';
+  return '📍';
+}
+function buildTags(place) {
+  const tags  = [];
+  const types = place.types || [];
+  if (types.some(t => ['hospital','clinic'].includes(t))) tags.push('🏥 Medical');
+  if (types.includes('toilets'))    tags.push('🚻 Washroom');
+  if (types.includes('bench'))      tags.push('🪑 Seating');
+  if (types.includes('shelter'))    tags.push('⛺ Shelter');
+  if (types.includes('park'))       tags.push('🌳 Park');
+  if (types.includes('elevator'))   tags.push('🛗 Elevator');
+  if (types.includes('pharmacy'))   tags.push('💊 Pharmacy');
+  if (place.wheelchair === 'yes')   tags.push('♿ Wheelchair OK');
+  if (!tags.length)                 tags.push('♿ Accessible');
+  return tags;
+}
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── Auto-init ──────────────────────────────────────────────
+window.addEventListener('load', () => {
+  if (mode === 'blind') {
+    setTimeout(() => speakText('Welcome to Navio Visual Assist. Tap Read Surroundings or press Space to hear nearby accessible places. Enter a destination below to start navigation.'), 800);
+  } else {
+    locateMe();
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && mode === 'blind' && e.target.tagName !== 'INPUT') {
+    e.preventDefault();
+    readSurroundings();
+  }
+});
+</script>
+</body>
+</html>

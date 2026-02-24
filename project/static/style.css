@@ -1,0 +1,46 @@
+/* SafeStep — Global Stylesheet
+   Note: Most styles are defined inline in each template.
+   This file exists to satisfy the static mount and can hold
+   any truly global overrides if needed in future.
+*/
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Smooth scrolling site-wide */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevent horizontal overflow on mobile */
+body {
+  overflow-x: hidden;
+}
+
+/* Make images responsive by default */
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Leaflet map z-index fix — prevents map tiles showing above nav */
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+  z-index: 1 !important;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 2 !important;
+}

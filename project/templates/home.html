@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HealthPath — Your Health Companion</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --dark:    #1A2E35;
+      --teal:    #02A896;
+      --orange:  #E85D26;
+      --cream:   #F5F0E8;
+      --white:   #FFFFFF;
+      --gray:    #6B7280;
+      --light:   #E6F9F7;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--dark);
+      overflow-x: hidden;
+    }
+
+    /* ── BACKGROUND BLOBS ── */
+    .bg-blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.18;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob1 { width: 500px; height: 500px; background: var(--teal);  top: -100px; left: -100px; animation: drift 10s ease-in-out infinite alternate; }
+    .blob2 { width: 400px; height: 400px; background: var(--orange); bottom: -80px; right: -80px; animation: drift 13s ease-in-out infinite alternate-reverse; }
+    .blob3 { width: 300px; height: 300px; background: var(--teal);  top: 50%; left: 50%; transform: translate(-50%,-50%); animation: drift 8s ease-in-out infinite alternate; }
+
+    @keyframes drift {
+      from { transform: translate(0, 0) scale(1); }
+      to   { transform: translate(30px, 20px) scale(1.05); }
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.2rem 3rem;
+      background: rgba(245,240,232,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(2,168,150,0.15);
+    }
+
+    .nav-logo {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.5rem;
+      color: var(--dark);
+      letter-spacing: -0.5px;
+    }
+    .nav-logo span { color: var(--teal); }
+
+    .nav-links { display: flex; gap: 1rem; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.65rem 1.6rem;
+      border-radius: 100px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+      transition: all 0.25s ease;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--dark);
+      color: var(--dark);
+    }
+    .btn-outline:hover { background: var(--dark); color: var(--white); }
+
+    .btn-primary {
+      background: var(--teal);
+      color: var(--white);
+    }
+    .btn-primary:hover { background: #019688; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(2,168,150,0.3); }
+
+    .btn-danger {
+      background: var(--orange);
+      color: var(--white);
+    }
+    .btn-danger:hover { background: #cf4e1e; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(232,93,38,0.3); }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 8rem 2rem 4rem;
+    }
+
+    .hero-tag {
+      display: inline-block;
+      background: var(--light);
+      border: 1px solid var(--teal);
+      color: var(--teal);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 0.4rem 1rem;
+      border-radius: 100px;
+      margin-bottom: 2rem;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .hero h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2.8rem, 6vw, 5rem);
+      line-height: 1.1;
+      letter-spacing: -1px;
+      max-width: 780px;
+      margin-bottom: 1.5rem;
+      animation: fadeUp 0.7s ease 0.1s both;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--teal);
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--gray);
+      max-width: 540px;
+      line-height: 1.7;
+      margin-bottom: 3rem;
+      font-weight: 300;
+      animation: fadeUp 0.7s ease 0.2s both;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeUp 0.7s ease 0.3s both;
+    }
+
+    .hero-actions .btn { font-size: 1rem; padding: 0.85rem 2rem; }
+
+    /* ── EMERGENCY BANNER ── */
+    .emergency-banner {
+      position: relative;
+      z-index: 1;
+      margin: 0 2rem 4rem;
+      background: var(--dark);
+      border-radius: 20px;
+      padding: 2rem 3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+      flex-wrap: wrap;
+      animation: fadeUp 0.7s ease 0.4s both;
+      max-width: 860px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .emergency-banner-left { display: flex; align-items: center; gap: 1rem; }
+
+    .emergency-icon {
+      width: 50px; height: 50px;
+      background: var(--orange);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+      animation: pulse 2s ease infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(232,93,38,0.4); }
+      50%       { box-shadow: 0 0 0 12px rgba(232,93,38,0); }
+    }
+
+    .emergency-text h3 {
+      color: var(--white);
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+    }
+    .emergency-text p {
+      color: rgba(255,255,255,0.55);
+      font-size: 0.85rem;
+    }
+
+    /* ── WHO IT SERVES ── */
+    .section {
+      position: relative;
+      z-index: 1;
+      padding: 5rem 2rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 0.8rem;
+    }
+
+    .section h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.2;
+      margin-bottom: 3rem;
+      max-width: 500px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--white);
+      border-radius: 20px;
+      padding: 2rem;
+      border: 1px solid rgba(0,0,0,0.06);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--teal);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+    .card:nth-child(2)::before { background: var(--orange); }
+    .card:nth-child(3)::before { background: #7C3AED; }
+
+    .card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.08); }
+    .card:hover::before { transform: scaleX(1); }
+
+    .card-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .card h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.3rem;
+      margin-bottom: 0.7rem;
+    }
+
+    .card p {
+      color: var(--gray);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 1.2rem;
+    }
+
+    .tag {
+      font-size: 0.72rem;
+      font-weight: 500;
+      padding: 0.3rem 0.8rem;
+      border-radius: 100px;
+      background: var(--light);
+      color: var(--teal);
+    }
+    .card:nth-child(2) .tag { background: #FEF3C7; color: #92400E; }
+    .card:nth-child(3) .tag { background: #EDE9FE; color: #5B21B6; }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 2rem;
+      color: var(--gray);
+      font-size: 0.82rem;
+      border-top: 1px solid rgba(0,0,0,0.08);
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      nav { padding: 1rem 1.5rem; }
+      .hero-actions { flex-direction: column; align-items: center; }
+      .emergency-banner { flex-direction: column; text-align: center; }
+      .emergency-banner-left { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background blobs -->
+  <div class="bg-blob blob1"></div>
+  <div class="bg-blob blob2"></div>
+  <div class="bg-blob blob3"></div>
+
+  <!-- Nav -->
+  <nav>
+    <div class="nav-logo">Navi<span>o</span></div>
+    <div class="nav-links">
+      <a href="/login" class="btn btn-outline">Log In</a>
+      <a href="/signup" class="btn btn-primary">Sign Up</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-tag">Low Cost HealthTech & Telemedicine</div>
+    <h1>Your health shouldn't limit<br/> how you <em>live your life</em></h1>
+    <p>A personalized health companion that navigates the real world around your condition — recommending accessible places, sharing live location with caregivers, and providing emergency support.</p>
+    <div class="hero-actions">
+      <a href="/signup" class="btn btn-primary">Get Started →</a>
+      <a href="/login" class="btn btn-outline">I already have an account</a>
+    </div>
+  </section>
+
+  <!-- Emergency Banner -->
+  <div class="emergency-banner">
+    <div class="emergency-banner-left">
+      <div class="emergency-icon">🚨</div>
+      <div class="emergency-text">
+        <h3>In an emergency?</h3>
+        <p>Access emergency contacts instantly — no login required</p>
+      </div>
+    </div>
+    <a href="/emergency" class="btn btn-danger">Emergency Contacts →</a>
+  </div>
+
+  <!-- Who It Serves -->
+  <section class="section">
+    <div class="section-label">Who we serve</div>
+    <h2>Built for those who need it most</h2>
+    
+
+      <div class="card">
+        <div class="card-icon"></div>
+        <h3>Differently Abled</h3>
+        <p>Wheelchair ramp access, crowd levels, accessible washrooms, and audio navigation with braille road information for visually impaired users.</p>
+        <div class="card-tags">
+          <span class="tag">Wheelchair</span>
+          <span class="tag">Visually Impaired</span>
+          <span class="tag">Audio Nav</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-icon"></div>
+        <h3>Senior Citizens</h3>
+        <p>Find elevators, rest spots, and accessible washrooms nearby. Emergency contacts always one tap away, no matter where you are.</p>
+        <div class="card-tags">
+          <span class="tag">Elevators</span>
+          <span class="tag">Rest Areas</span>
+          <span class="tag">Emergency</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+
+</body>
+</html>
